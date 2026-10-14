@@ -1,0 +1,461 @@
+# Credit Card Fraud Detection System
+
+## Project Overview
+
+### Project Title
+Credit Card Fraud Detection Using Machine Learning
+
+### Project Goal
+The goal of this project was to develop a machine learning system capable of identifying fraudulent credit card transactions based on transaction details and customer behavior patterns.
+
+### Business Objectives
+- Detect fraudulent transactions accurately
+- Reduce financial losses
+- Protect customers from unauthorized transactions
+- Improve transaction security
+- Support real-time fraud monitoring
+
+---
+
+# Technologies and Tools Used
+
+## Programming Language
+- Python
+
+## Libraries
+- Pandas
+- NumPy
+- Scikit-learn
+- Matplotlib
+
+## Machine Learning Models
+- Logistic Regression
+- Random Forest Classifier
+- Gradient Boosting Classifier
+- SGD Classifier
+
+## Evaluation Metrics
+- Precision
+- Recall
+- F1-Score
+- ROC-AUC
+- Confusion Matrix
+
+---
+
+# Dataset Requirements
+
+The dataset contained transaction-related information used to train and evaluate fraud detection models.
+
+## Features Used
+
+### Transaction Features
+- transaction_amount
+- transaction_currency
+- transaction_source
+- transaction_response_code
+
+### Merchant Features
+- merchant_name
+- merchant_category_code_(mcc)
+
+### Device Features
+- device_information
+
+### User Features
+- user_account_information
+- previous_transactions
+
+### Location Features
+- transaction_location_(city_or_zip_code)
+
+### Card Features
+- card_type
+
+### Target Variable
+- fraud_flag_or_label
+
+---
+
+# Project Workflow
+
+## Step 1: Data Preprocessing
+
+### Tasks Performed
+- Data cleaning
+- Handling categorical variables
+- Feature scaling
+- Dataset preparation
+
+### Techniques Used
+
+#### One-Hot Encoding
+Applied to categorical variables to convert text values into numerical representations.
+
+```python
+from sklearn.preprocessing import OneHotEncoder
+
+encoder = OneHotEncoder(
+    sparse_output=False,
+    handle_unknown='ignore'
+)
+```
+
+#### Standardization
+Applied to numerical features.
+
+```python
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+```
+
+---
+
+## Step 2: Feature Engineering
+
+Additional features were created to improve fraud detection performance.
+
+### Features Created
+
+#### High Amount Indicator
+
+```python
+df_credit['is_high_amount'] = (
+    df_credit['transaction_amount'] >
+    df_credit['transaction_amount'].mean()
+).astype(int)
+```
+
+#### Foreign Transaction Indicator
+
+```python
+df_credit['is_foreign'] = (
+    df_credit['transaction_currency'] != 'USD'
+).astype(int)
+```
+
+#### Device Frequency
+
+```python
+device_freq = df_credit['device_information'].value_counts(normalize=True)
+
+df_credit['device_freq'] = (
+    df_credit['device_information']
+    .map(device_freq)
+)
+```
+
+#### Device Risk
+
+```python
+device_risk = (
+    df_credit.groupby('device_information')
+    ['fraud_flag_or_label']
+    .mean()
+)
+
+df_credit['device_risk'] = (
+    df_credit['device_information']
+    .map(device_risk)
+)
+```
+
+---
+
+## Step 3: Train-Test Split
+
+The dataset was divided into training and testing sets.
+
+```python
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+```
+
+### Split Ratio
+- Training Data: 80%
+- Testing Data: 20%
+
+---
+
+## Step 4: Model Training
+
+Several machine learning models were trained and compared.
+
+### Logistic Regression
+
+```python
+from sklearn.linear_model import LogisticRegression
+
+lr = LogisticRegression()
+lr.fit(X_train, y_train)
+```
+
+### Random Forest
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier()
+rf.fit(X_train, y_train)
+```
+
+### Gradient Boosting
+
+```python
+from sklearn.ensemble import GradientBoostingClassifier
+
+gb = GradientBoostingClassifier()
+gb.fit(X_train, y_train)
+```
+
+### SGD Classifier
+
+```python
+from sklearn.linear_model import SGDClassifier
+
+sgd = SGDClassifier()
+sgd.fit(X_train, y_train)
+```
+
+---
+
+## Step 5: Model Evaluation
+
+Models were evaluated using:
+
+### Classification Report
+
+```python
+from sklearn.metrics import classification_report
+
+print(
+    classification_report(
+        y_test,
+        y_pred
+    )
+)
+```
+
+### Confusion Matrix
+
+```python
+from sklearn.metrics import confusion_matrix
+
+cm = confusion_matrix(
+    y_test,
+    y_pred
+)
+
+print(cm)
+```
+
+### ROC-AUC Score
+
+```python
+from sklearn.metrics import roc_auc_score
+
+roc_auc_score(
+    y_test,
+    y_prob
+)
+```
+
+---
+
+# Threshold Tuning
+
+Threshold tuning was performed to optimize fraud detection performance.
+
+```python
+from sklearn.metrics import precision_recall_curve
+
+precision, recall, thresholds = (
+    precision_recall_curve(
+        y_test,
+        y_prob
+    )
+)
+```
+
+### Best Threshold Found
+
+```text
+Threshold = 0.309
+Precision = 0.512
+Recall = 0.997
+```
+
+---
+
+# Issues Encountered and Solutions
+
+## Issue 1: Encoding Error
+
+### Error
+
+```text
+ValueError:
+Boolean array expected for the condition,
+not object
+```
+
+### Cause
+A DataFrame was passed instead of a list of column names.
+
+### Solution
+
+```python
+categorical_cols = [
+    'merchant_name',
+    'transaction_currency',
+    'card_type'
+]
+```
+
+---
+
+## Issue 2: Numeric Conversion Error
+
+### Error
+
+```text
+ValueError:
+could not convert string to float:
+'3 or more'
+```
+
+### Cause
+A numeric column contained text values.
+
+### Solution
+
+Converted categorical counts into numeric values before scaling.
+
+---
+
+## Issue 3: Undefined Variable Error
+
+### Error
+
+```text
+NameError:
+name 'y_prob' is not defined
+```
+
+### Cause
+Predicted probabilities had not been generated.
+
+### Solution
+
+```python
+y_prob = model.predict_proba(X_test)[:, 1]
+```
+
+---
+
+## Issue 4: Model Predicting Mostly Fraud
+
+### Observation
+
+```text
+(array([0,1]), array([3,583]))
+```
+
+The model predicted almost all transactions as fraud.
+
+### Solution
+- Feature engineering
+- Threshold tuning
+- Feature importance analysis
+- Correlation analysis
+
+---
+
+## Issue 5: Weak Feature Signal
+
+### Observation
+
+Most features showed very low correlation with fraud labels.
+
+Example:
+
+```text
+Correlation Range:
+-0.05 to +0.05
+```
+
+### Solution
+Added:
+- Risk features
+- Frequency features
+- Behavioral features
+- Amount-based features
+
+---
+
+# Successes Achieved
+
+## Completed Successfully
+
+- Built an end-to-end fraud detection pipeline
+- Performed data preprocessing
+- Applied feature engineering
+- Trained multiple machine learning models
+- Evaluated models using multiple metrics
+- Performed threshold tuning
+- Conducted feature importance analysis
+- Conducted correlation analysis
+- Investigated model performance issues
+
+---
+
+# Key Findings
+
+## Finding 1
+Model performance remained near random.
+
+```text
+ROC-AUC ≈ 0.50
+```
+
+## Finding 2
+Most features had weak correlation with fraud labels.
+
+## Finding 3
+The primary limitation was data quality rather than model selection.
+
+## Finding 4
+Feature engineering plays a critical role in fraud detection systems.
+
+---
+
+# Future Improvements
+
+The project can be improved by:
+
+- Using a real-world fraud dataset
+- Adding customer behavioral features
+- Adding transaction time features
+- Implementing anomaly detection
+- Using XGBoost
+- Using LightGBM
+- Deploying a real-time fraud detection API
+- Building a monitoring dashboard
+
+---
+
+# Final Conclusion
+
+This project successfully demonstrated the complete machine learning workflow for fraud detection, including data preprocessing, feature engineering, model training, evaluation, threshold tuning, and model diagnostics.
+
+Although the models achieved limited predictive performance due to weak feature signals within the dataset, the project provided valuable insights into the importance of data quality, feature engineering, and model evaluation in fraud detection systems.
+
+The experience highlighted that successful fraud detection depends not only on machine learning algorithms but also on meaningful, behavior-driven features and high-quality datasets.
